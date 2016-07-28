@@ -51,14 +51,16 @@ function initState(options, patch) {
 			patch: patch,
 			hash: orElse(isFunction, options.hash, defaultHash),
 			makeContext: orElse(isFunction, options.makeContext, defaultContext),
-			invertible: !(options.invertible === false)
+			invertible: !(options.invertible === false),
+			deepCompare: options.deepCompare === true,
 		};
 	} else {
 		return {
 			patch: patch,
 			hash: orElse(isFunction, options, defaultHash),
 			makeContext: defaultContext,
-			invertible: true
+			invertible: true,
+			deepCompare: false
 		};
 	}
 }
@@ -166,13 +168,18 @@ function lcsToJsonPatch(a1, a2, path, state, lcsMatrix) {
 			pOther = path + '/' + (j + offset - 1)
 
 			if(last !== void 0 && last.op === 'add' && last.path === pOther) {
-				last.op = 'replace';
-				last.context = context;
+				if(state.deepCompare) {
+					patch.pop();
+					appendChanges(a1[j], last.value, pOther, state);
+				} else {
+					last.op = 'replace';
+					last.context = context;
 
-				// Insert a test op with the same path *before* the replace op
-				if(state.invertible) {
-					patch[patch.length-1] = { op: 'test', path: pOther, value: a1[j], context: context };
-					patch.push(last);
+					// Insert a test op with the same path *before* the replace op
+					if(state.invertible) {
+						patch[patch.length-1] = { op: 'test', path: pOther, value: a1[j], context: context };
+						patch.push(last);
+					}
 				}
 			} else {
 				if(state.invertible) {
