@@ -133,6 +133,25 @@ buster.testCase('jiff', {
 			}
 		},
 
+		'deep compare': {
+			'when true': {
+				'with good hash function': {
+					'should generate deep array patches': function() {
+						var a = [{id: 1, name: 'bob'}, {id: 2, name: 'george'}];
+						var b = [{id: 1, name: 'jeff'}, {id: 2, name: 'george'}];
+						var patch = jiff.diff(a, b, {hasher: idHash, deepCompare: true});
+						assert.equals(patch.length, 2);
+						assert.equals(patch[0].op, 'test');
+						assert.equals(patch[0].path, '/0/name');
+						assert.equals(patch[0].value, 'bob');
+						assert.equals(patch[1].op, 'replace');
+						assert.equals(patch[1].path, '/0/name');
+						assert.equals(patch[1].value, 'jeff');
+					}
+				}
+			}
+		},
+
 		'invertible': {
 			'when false': {
 				'should not generate extra test ops for array remove': function() {
@@ -168,6 +187,10 @@ buster.testCase('jiff', {
 		}
 	}
 });
+
+function idHash(x) {
+	return x.id;
+}
 
 function deepEqualAfterDiffPatch(hasher) {
 	return function(a, b) {
